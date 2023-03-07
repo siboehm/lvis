@@ -578,10 +578,10 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	ss.Params.SetObject("Network")
 	net.InitWts()
 
-	if !ss.Args.Bool("nogui") {
-		sr := net.SizeReport()
-		mpi.Printf("%s", sr)
-	}
+	sr := net.SizeReport()
+	net.RecFunTimes = true
+	mpi.Printf("%s", sr)
+	fmt.Println(len(net.Layers), "layers")
 
 	// adding each additional layer type improves decoding..
 	layers := []emer.Layer{v4f16, v4f8, teo16, teo8, out}
@@ -641,6 +641,14 @@ func (ss *Sim) ConfigLoops() {
 		ss.Net.DWt(&ss.Context)
 		ss.ViewUpdt.RecordSyns() // note: critical to update weights here so DWt is visible
 		ss.MPIWtFmDWt()
+	})
+
+	trial := 0
+	man.GetLoop(etime.Train, etime.Trial).OnEnd.Add("TimerReport", func() {
+		fmt.Println("Trial:", trial, "Cycles:", 200)
+		ss.Net.TimerReport()
+		ss.Net.FunTimes = make(map[string]*timer.Time) // reset
+		trial += 1
 	})
 
 	for m, _ := range man.Stacks {
